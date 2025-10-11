@@ -80,8 +80,8 @@ https://console.cloud.tencent.com/cam/capi
 
 ### API密钥格式示例
 ```bash
-SecretId: AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-SecretKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SecretId: YOUR_SECRET_ID_HERE
+SecretKey: YOUR_SECRET_KEY_HERE
 ```
 
 ## 💰 充值账户
