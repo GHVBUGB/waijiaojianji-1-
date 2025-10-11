@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .file-list {
+            margin: 20px 0;
+        }
+        
+        .file-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-processing { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d1edcc; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 文件上传测试</h1>
+    
+    <div class="upload-area" id="uploadArea">
+        <h3>拖拽视频文件到这里，或点击选择</h3>
+        <p>支持 MP4, MOV, AVI, MKV 格式</p>
+        <input type="file" id="fileInput" class="file-input" multiple accept=".mp4,.mov,.avi,.mkv">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">
+            选择文件
+        </button>
+    </div>
+    
+    <div>
+        <h3>配置</h3>
+        <label>外教姓名: <input type="text" id="teacherName" value="Test Teacher"></label><br><br>
+        <label>语言: 
+            <select id="language">
+                <option value="en">英语</option>
+                <option value="zh">中文</option>
+            </select>
+        </label><br><br>
+        <button class="btn" onclick="uploadFiles()" id="uploadBtn">开始上传</button>
+    </div>
+    
+    <div class="file-list" id="fileList">
+        <h3>文件列表</h3>
+    </div>
+    
+    <div class="log" id="log">
+        <h3>日志</h3>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            // 拖拽事件
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+            
+            // 文件选择
+            fileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            });
+            
+            log('页面初始化完成');
+        });
+        
+        function handleFiles(files) {
+            log(`选择了 ${files.length} 个文件`);
+            selectedFiles = files;
+            updateFileList();
+        }
+        
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '<h3>文件列表</h3>';
+            
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <span class="status status-pending">等待上传</span>
+                `;
+                item.id = `file-${index}`;
+                fileList.appendChild(item);
+            });
+        }
+        
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) {
+                log('ERROR: 没有选择文件');
+                return;
+            }
+            
+            const teacherName = document.getElementById('teacherName').value;
+            const language = document.getElementById('language').value;
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '上传中...';
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                await uploadFile(selectedFiles[i], i, teacherName, language);
+            }
+            
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '开始上传';
+        }
+        
+        async function uploadFile(file, index, teacherName, language) {
+            const fileItem = document.getElementById(`file-${index}`);
+            const statusSpan = fileItem.querySelector('.status');
+            
+            try {
+                log(`开始上传: ${file.name}`);
+                statusSpan.textContent = '上传中...';
+                statusSpan.className = 'status status-processing';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('teacher_name', teacherName);
+                formData.append('language_hint', language);
+                
+                const response = await fetch('/api/v1/video/upload-and-process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                log(`响应: ${JSON.stringify(result, null, 2)}`);
+                
+                if (result.success) {
+                    statusSpan.textContent = '上传成功';
+                    statusSpan.className = 'status status-completed';
+                    log(`SUCCESS: ${file.name} 上传成功，任务ID: ${result.data?.job_id}`);
+                } else {
+                    statusSpan.textContent = '上传失败';
+                    statusSpan.className = 'status status-error';
+                    log(`ERROR: ${file.name} 上传失败: ${result.message}`);
+                }
+                
+            } catch (error) {
+                log(`ERROR: ${file.name} 上传异常: ${error.message}`);
+                statusSpan.textContent = '上传异常';
+                statusSpan.className = 'status status-error';
+            }
+        }
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外教视频处理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+        }
+
+        .upload-section.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .config-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .config-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-list {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-status {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .btn-download {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-pending { color: #ffc107; }
+        .status-processing { color: #007bff; }
+        .status-completed { color: #28a745; }
+        .status-error { color: #dc3545; }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .result-video {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .result-info {
+            margin-bottom: 15px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        .toast.info {
+            background: #17a2b8;
+        }
+
+        .monitor-section {
+            margin-bottom: 30px;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .monitor-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .monitor-card h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-item span:first-child {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stat-item span:last-child {
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎥 外教视频背景移除系统</h1>
+            <p>智能视频背景移除 + 专业处理</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 文件上传区域 -->
+            <div class="upload-section" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <h3>拖拽视频文件到这里，或点击选择文件</h3>
+                <p>支持 MP4, MOV, AVI, MKV 格式，最大 100MB</p>
+                <input type="file" id="fileInput" class="file-input" multiple accept=".mp4,.mov,.avi,.mkv">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    选择文件
+                </button>
+                <button class="upload-btn" onclick="selectFolder()">
+                    选择文件夹
+                </button>
+            </div>
+
+            <!-- 配置区域 -->
+            <div class="config-section">
+                <div class="config-card">
+                    <h3>👤 基本信息</h3>
+                    <div class="form-group">
+                        <label>外教姓名（可选）</label>
+                        <input type="text" id="teacherName" placeholder="请输入外教姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>视频描述（可选）</label>
+                        <input type="text" id="videoDescription" placeholder="请输入视频描述">
+                    </div>
+                </div>
+
+                <div class="config-card">
+                    <h3>🎬 视频背景移除配置</h3>
+                    <div class="form-group">
+                        <label>处理质量</label>
+                        <select id="qualitySelect">
+                            <option value="high">高质量（慢，费用高）</option>
+                            <option value="medium" selected>中等质量（推荐）</option>
+                            <option value="fast">快速处理（费用低）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>输出格式</label>
+                        <select id="outputFormat">
+                            <option value="mp4" selected>MP4</option>
+                            <option value="mov">MOV</option>
+                            <option value="avi">AVI</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="backgroundImage">背景图片 (可选)</label>
+                        <input type="file" id="backgroundImage" accept="image/*" onchange="handleBackgroundSelect(event)">
+                        <small style="color: #666; font-size: 0.9em;">支持JPG、PNG格式，用于替换视频背景</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="backgroundUrl">或输入背景图片URL</label>
+                        <input type="url" id="backgroundUrl" placeholder="https://example.com/background.jpg">
+                        <small style="color: #666; font-size: 0.9em;">直接输入图片链接地址</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 开始处理按钮 -->
+            <button class="process-btn" id="processBtn" onclick="startProcessing()">
+                🎬 开始背景移除
+            </button>
+
+            <!-- 快速访问按钮 -->
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="/static/results.html" class="upload-btn" style="text-decoration: none; display: inline-block;">
+                    📁 查看处理结果
+                </a>
+                <a href="/outputs/" class="upload-btn" style="text-decoration: none; display: inline-block;">
+                    📂 浏览输出文件
+                </a>
+            </div>
+
+            <!-- 进度显示 -->
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <h3>处理进度</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">准备中...</p>
+            </div>
+
+            <!-- 文件列表 -->
+            <div id="fileListSection" style="display: none;">
+                <h3>📋 文件列表</h3>
+                <div class="file-list" id="fileList">
+                    <!-- 文件项将动态添加到这里 -->
+                </div>
+            </div>
+
+            <!-- 系统监控面板 -->
+            <div class="monitor-section" id="monitorSection" style="display: none;">
+                <h3>📊 系统监控</h3>
+                <div class="monitor-grid">
+                    <div class="monitor-card">
+                        <h4>处理统计</h4>
+                        <div class="stat-item">
+                            <span>总处理数:</span>
+                            <span id="totalProcessed">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>成功率:</span>
+                            <span id="successRate">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>平均处理时间:</span>
+                            <span id="avgProcessTime">0s</span>
+                        </div>
+                    </div>
+                    <div class="monitor-card">
+                        <h4>当前队列</h4>
+                        <div class="stat-item">
+                            <span>等待中:</span>
+                            <span id="queuePending">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>处理中:</span>
+                            <span id="queueProcessing">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>已完成:</span>
+                            <span id="queueCompleted">0</span>
+                        </div>
+                    </div>
+                    <div class="monitor-card">
+                        <h4>费用估算</h4>
+                        <div class="stat-item">
+                            <span>本次处理:</span>
+                            <span id="currentCost">¥0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>今日总计:</span>
+                            <span id="dailyCost">¥0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>剩余配额:</span>
+                            <span id="remainingQuota">100%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 处理结果 -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h3>✨ 处理结果</h3>
+                <div class="results-grid" id="resultsGrid">
+                    <!-- 结果卡片将动态添加到这里 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let selectedFiles = [];
+        let processingJobs = [];
+        let currentJobIndex = 0;
+        let selectedBackgroundImage = null;
+        let processingStats = {
+            total: 0,
+            completed: 0,
+            failed: 0,
+            totalProcessTime: 0,
+            currentCost: 0,
+            dailyCost: 0
+        };
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            checkServerStatus();
+            loadStoredStats();
+            startMonitoring();
+        });
+
+        // 初始化事件监听器
+        function initializeEventListeners() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // 文件拖拽事件
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files);
+                handleFileSelection(files);
+            });
+
+            // 文件选择事件
+            fileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                handleFileSelection(files);
+            });
+        }
+
+        // 处理文件选择
+        function handleFileSelection(files) {
+            console.log('[UI] handleFileSelection - files:', files.map(f => ({name: f.name, size: f.size})));
+            const validFiles = files.filter(file => {
+                const validTypes = ['.mp4', '.mov', '.avi', '.mkv'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                return validTypes.includes(fileExt) && file.size <= 100 * 1024 * 1024;
+            });
+
+            if (validFiles.length === 0) {
+                showToast('请选择有效的视频文件（MP4, MOV, AVI, MKV，最大100MB）', 'error');
+                return;
+            }
+
+            selectedFiles = [...selectedFiles, ...validFiles];
+            updateFileList();
+            showToast(`已选择 ${validFiles.length} 个文件`, 'success');
+        }
+
+        // 更新文件列表显示
+        function updateFileList() {
+            const fileListSection = document.getElementById('fileListSection');
+            const fileList = document.getElementById('fileList');
+            
+            if (selectedFiles.length === 0) {
+                fileListSection.style.display = 'none';
+                return;
+            }
+
+            fileListSection.style.display = 'block';
+            fileList.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-status">大小: ${formatFileSize(file.size)} | 状态: <span class="status-pending">等待处理</span></div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn-small btn-delete" onclick="removeFile(${index})">删除</button>
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 移除文件
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            showToast('文件已移除', 'info');
+        }
+
+        // 开始处理
+        async function startProcessing() {
+            console.log('[UI] startProcessing - selectedFiles:', selectedFiles.map(f => f.name));
+            if (selectedFiles.length === 0) {
+                showToast('请先选择要处理的文件', 'error');
+                return;
+            }
+
+            const processBtn = document.getElementById('processBtn');
+            const progressSection = document.getElementById('progressSection');
+            
+            processBtn.disabled = true;
+            processBtn.textContent = '处理中...';
+            progressSection.style.display = 'block';
+
+            try {
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    currentJobIndex = i;
+                    await processFile(selectedFiles[i], i);
+                    updateProgress((i + 1) / selectedFiles.length * 100);
+                }
+                
+                showToast('所有文件处理完成！', 'success');
+                loadResults();
+            } catch (error) {
+                console.error('处理错误:', error);
+                showToast('处理过程中出现错误', 'error');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🚀 开始处理';
+            }
+        }
+
+        // 处理单个文件
+        async function processFile(file, index, retryCount = 0) {
+            console.log(`[UI] processFile - start, file=${file.name}, index=${index}, retry=${retryCount}`);
+            const maxRetries = 3;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('teacher_name', document.getElementById('teacherName').value || '');
+            formData.append('description', document.getElementById('videoDescription').value || '');
+            formData.append('quality', document.getElementById('qualitySelect').value);
+            formData.append('output_format', document.getElementById('outputFormat').value);
+            
+            // 添加背景图片
+            if (selectedBackgroundImage) {
+                formData.append('background_image', selectedBackgroundImage);
+            } else if (document.getElementById('backgroundUrl').value) {
+                formData.append('background_url', document.getElementById('backgroundUrl').value);
+            }
+            try {
+                updateFileStatus(index, 'processing', retryCount > 0 ? `重试中 (${retryCount}/${maxRetries})...` : '上传中...');
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+                
+                console.log('[UI] processFile - POST /api/v1/video/upload-and-process');
+                const response = await fetch('/api/v1/video/upload-and-process', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    console.log('[UI] processFile - response not ok', response.status, response.statusText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('[UI] processFile - response json', result);
+                
+                if (result.success) {
+                    const jobId = result.data.job_id;
+                    processingJobs.push({ jobId, fileIndex: index, fileName: file.name });
+                    updateFileStatus(index, 'processing', '处理中...');
+                    
+                    // 轮询处理状态
+                    await pollJobStatus(jobId, index);
+                } else {
+                    throw new Error(result.message || '服务器返回处理失败');
+                }
+            } catch (error) {
+                console.error(`文件处理错误 (尝试 ${retryCount + 1}):`, error);
+                
+                if (error.name === 'AbortError') {
+                    updateFileStatus(index, 'error', '上传超时，请检查网络连接');
+                } else if (retryCount < maxRetries) {
+                    // 重试
+                    const delay = Math.pow(2, retryCount) * 1000; // 指数退避
+                    updateFileStatus(index, 'processing', `${delay/1000}秒后重试...`);
+                    console.log(`[UI] processFile - schedule retry in ${delay}ms`);
+                    setTimeout(() => processFile(file, index, retryCount + 1), delay);
+                } else {
+                    // 达到最大重试次数
+                    let errorMessage = '处理失败';
+                    if (error.message.includes('HTTP 413')) {
+                        errorMessage = '文件太大，请选择较小的文件';
+                    } else if (error.message.includes('HTTP 422')) {
+                        errorMessage = '文件格式不支持';
+                    } else if (error.message.includes('HTTP 500')) {
+                        errorMessage = '服务器内部错误';
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorMessage = '网络连接失败';
+                    } else {
+                        errorMessage = error.message || '未知错误';
+                    }
+                    updateFileStatus(index, 'error', errorMessage);
+                    console.log('[UI] processFile - final error:', errorMessage);
+                    
+                    // 添加重试按钮
+                    addRetryButton(index, file);
+                }
+            }
+        }
+
+        // 添加重试按钮
+        function addRetryButton(index, file) {
+            const fileItems = document.querySelectorAll('.file-item');
+            if (fileItems[index]) {
+                const actionsDiv = fileItems[index].querySelector('.file-actions');
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'btn-small';
+                retryBtn.style.background = '#ffc107';
+                retryBtn.style.color = '#212529';
+                retryBtn.textContent = '重试';
+                retryBtn.onclick = () => {
+                    retryBtn.remove();
+                    processFile(file, index);
+                };
+                actionsDiv.insertBefore(retryBtn, actionsDiv.firstChild);
+            }
+        }
+
+        // 轮询任务状态
+        async function pollJobStatus(jobId, fileIndex) {
+            const maxAttempts = 60; // 最多轮询5分钟
+            let attempts = 0;
+
+            const poll = async () => {
+                try {
+                    const response = await fetch(`/api/v1/video/progress/${jobId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const status = result.data.status;
+                        const progress = result.data.progress || 0;
+                        
+                        updateFileStatus(fileIndex, status, `${progress}%`);
+                        
+                        if (status === 'completed') {
+                            updateFileStatus(fileIndex, 'completed', '处理完成');
+                            updateProcessingStats('completed', result.data.processing_time || 0);
+                            return;
+                        } else if (status === 'failed') {
+                            updateFileStatus(fileIndex, 'error', '处理失败');
+                            updateProcessingStats('failed');
+                            return;
+                        }
+                    }
+                    
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000); // 5秒后重新检查
+                    } else {
+                        updateFileStatus(fileIndex, 'error', '处理超时');
+                    }
+                } catch (error) {
+                    console.error('状态查询错误:', error);
+                    updateFileStatus(fileIndex, 'error', '状态查询失败');
+                }
+            };
+
+            await poll();
+        }
+
+        // 更新文件状态
+        function updateFileStatus(index, status, message) {
+            const fileItems = document.querySelectorAll('.file-item');
+            if (fileItems[index]) {
+                const statusElement = fileItems[index].querySelector('.file-status span');
+                statusElement.className = `status-${status}`;
+                statusElement.textContent = message;
+                
+                // 如果处理完成，添加下载按钮
+                if (status === 'completed') {
+                    const actionsDiv = fileItems[index].querySelector('.file-actions');
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.className = 'btn-small btn-download';
+                    downloadBtn.textContent = '下载';
+                    downloadBtn.onclick = () => downloadResult(processingJobs.find(job => job.fileIndex === index)?.jobId);
+                    actionsDiv.insertBefore(downloadBtn, actionsDiv.firstChild);
+                }
+            }
+        }
+
+        // 更新总进度
+        function updateProgress(percentage) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressFill.style.width = percentage + '%';
+            progressText.textContent = `处理进度: ${Math.round(percentage)}% (${currentJobIndex + 1}/${selectedFiles.length})`;
+        }
+
+        // 下载结果
+        async function downloadResult(jobId) {
+            try {
+                const response = await fetch(`/api/v1/video/download/${jobId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `processed_${jobId}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('下载开始', 'success');
+                } else {
+                    showToast('下载失败', 'error');
+                }
+            } catch (error) {
+                console.error('下载错误:', error);
+                showToast('下载出现错误', 'error');
+            }
+        }
+
+        // 加载处理结果
+        async function loadResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            resultsSection.style.display = 'block';
+            resultsGrid.innerHTML = '';
+
+            for (const job of processingJobs) {
+                try {
+                    const response = await fetch(`/api/v1/video/results/${job.jobId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const resultCard = createResultCard(job, result.data);
+                        resultsGrid.appendChild(resultCard);
+                    }
+                } catch (error) {
+                    console.error('加载结果错误:', error);
+                }
+            }
+        }
+
+        // 创建结果卡片
+        function createResultCard(job, resultData) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            card.innerHTML = `
+                <h4>${job.fileName}</h4>
+                <div class="result-info">
+                    <p><strong>处理时间:</strong> ${resultData.processing_time || 'N/A'}秒</p>
+                    <p><strong>处理状态:</strong> 背景移除完成</p>
+                    <p><strong>状态:</strong> <span class="status-completed">已完成</span></p>
+                </div>
+                <div class="result-actions">
+                    <button class="btn-small btn-download" onclick="downloadResult('${job.jobId}')">
+                        下载处理后视频
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // 下载字幕
+        async function downloadTranscript(jobId) {
+            try {
+                const response = await fetch(`/api/v1/video/results/${jobId}`);
+                const result = await response.json();
+                
+                if (result.success && result.data.transcript) {
+                    const blob = new Blob([result.data.transcript], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `transcript_${jobId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('字幕下载开始', 'success');
+                } else {
+                    showToast('没有可用的字幕文件', 'error');
+                }
+            } catch (error) {
+                console.error('字幕下载错误:', error);
+                showToast('字幕下载出现错误', 'error');
+            }
+        }
+
+        // 检查服务器状态
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/api/v1/health/');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.status === 'healthy') {
+                    showToast('🟢 系统已就绪，可以开始处理视频', 'success');
+                    updateSystemStatus('online');
+                } else {
+                    showToast('⚠️ 系统状态异常', 'error');
+                    updateSystemStatus('warning');
+                }
+            } catch (error) {
+                console.error('服务器状态检查失败:', error);
+                showToast('🔴 无法连接到服务器，请检查网络连接', 'error');
+                updateSystemStatus('offline');
+                // 每30秒重试一次
+                setTimeout(checkServerStatus, 30000);
+            }
+        }
+
+        // 更新系统状态显示
+        function updateSystemStatus(status) {
+            let statusIndicator = document.getElementById('statusIndicator');
+            if (!statusIndicator) {
+                statusIndicator = document.createElement('div');
+                statusIndicator.id = 'statusIndicator';
+                statusIndicator.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    padding: 8px 15px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    z-index: 1001;
+                    transition: all 0.3s ease;
+                `;
+                document.body.appendChild(statusIndicator);
+            }
+
+            switch (status) {
+                case 'online':
+                    statusIndicator.textContent = '🟢 在线';
+                    statusIndicator.style.background = '#d4edda';
+                    statusIndicator.style.color = '#155724';
+                    break;
+                case 'offline':
+                    statusIndicator.textContent = '🔴 离线';
+                    statusIndicator.style.background = '#f8d7da';
+                    statusIndicator.style.color = '#721c24';
+                    break;
+                case 'warning':
+                    statusIndicator.textContent = '⚠️ 异常';
+                    statusIndicator.style.background = '#fff3cd';
+                    statusIndicator.style.color = '#856404';
+                    break;
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 选择文件夹（需要现代浏览器支持）
+        function selectFolder() {
+            if ('showDirectoryPicker' in window) {
+                window.showDirectoryPicker().then(async (directoryHandle) => {
+                    const files = [];
+                    for await (const [name, handle] of directoryHandle) {
+                        if (handle.kind === 'file') {
+                            const file = await handle.getFile();
+                            files.push(file);
+                        }
+                    }
+                    handleFileSelection(files);
+                }).catch(err => {
+                    console.log('用户取消了文件夹选择');
+                });
+            } else {
+                showToast('您的浏览器不支持文件夹选择功能', 'error');
+            }
+        }
+
+        // 加载存储的统计数据
+        function loadStoredStats() {
+            const stored = localStorage.getItem('processingStats');
+            if (stored) {
+                processingStats = { ...processingStats, ...JSON.parse(stored) };
+            }
+            updateMonitorDisplay();
+        }
+
+        // 保存统计数据
+        function saveStats() {
+            localStorage.setItem('processingStats', JSON.stringify(processingStats));
+        }
+
+        // 开始监控
+        function startMonitoring() {
+            document.getElementById('monitorSection').style.display = 'block';
+            updateMonitorDisplay();
+            
+            // 每5秒更新一次监控数据
+            setInterval(updateMonitorDisplay, 5000);
+        }
+
+        // 更新监控显示
+        function updateMonitorDisplay() {
+            // 处理统计
+            document.getElementById('totalProcessed').textContent = processingStats.total;
+            const successRate = processingStats.total > 0 ? 
+                Math.round((processingStats.completed / processingStats.total) * 100) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            const avgTime = processingStats.completed > 0 ? 
+                Math.round(processingStats.totalProcessTime / processingStats.completed) : 0;
+            document.getElementById('avgProcessTime').textContent = avgTime + 's';
+
+            // 当前队列
+            const pending = selectedFiles.length - processingJobs.length;
+            const processing = processingJobs.filter(job => 
+                !job.completed && !job.failed).length;
+            const completed = processingJobs.filter(job => job.completed).length;
+            
+            document.getElementById('queuePending').textContent = Math.max(0, pending);
+            document.getElementById('queueProcessing').textContent = processing;
+            document.getElementById('queueCompleted').textContent = completed;
+
+            // 费用估算 (假设每分钟视频0.1元)
+            const estimatedCost = selectedFiles.length * 0.1;
+            document.getElementById('currentCost').textContent = '¥' + estimatedCost.toFixed(2);
+            document.getElementById('dailyCost').textContent = '¥' + processingStats.dailyCost.toFixed(2);
+            
+            // 剩余配额 (假设每日限额100元)
+            const dailyLimit = 100;
+            const remainingQuota = Math.max(0, (dailyLimit - processingStats.dailyCost) / dailyLimit * 100);
+            document.getElementById('remainingQuota').textContent = Math.round(remainingQuota) + '%';
+            
+            // 如果费用接近限额，显示警告
+            if (remainingQuota < 20) {
+                document.getElementById('remainingQuota').style.color = '#dc3545';
+                if (remainingQuota < 10) {
+                    showToast('⚠️ 今日费用配额即将用完', 'error');
+                }
+            } else {
+                document.getElementById('remainingQuota').style.color = '#28a745';
+            }
+        }
+
+        // 更新处理统计
+        function updateProcessingStats(status, processTime = 0) {
+            processingStats.total++;
+            
+            if (status === 'completed') {
+                processingStats.completed++;
+                processingStats.totalProcessTime += processTime;
+                processingStats.currentCost += 0.1; // 假设每个视频0.1元
+                processingStats.dailyCost += 0.1;
+            } else if (status === 'failed') {
+                processingStats.failed++;
+            }
+            
+            saveStats();
+            updateMonitorDisplay();
+        }
+    </script>
+    <script>
+    // 处理背景图片选择
+    function handleBackgroundSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                showToast('请选择JPG或PNG格式的图片', 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB限制
+                showToast('背景图片大小不能超过10MB', 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            selectedBackgroundImage = file;
+            showToast(`已选择背景图片: ${file.name}`, 'success');
+            
+            // 清空URL输入框
+            document.getElementById('backgroundUrl').value = '';
+        }
+    }
+    </script>
+</body>
+</html>

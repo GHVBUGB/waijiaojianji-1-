@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处理结果 - 外教视频背景移除系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .result-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .video-container {
+            margin-bottom: 15px;
+        }
+
+        .result-video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .file-info {
+            margin-bottom: 15px;
+        }
+
+        .file-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .file-info strong {
+            color: #333;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+        }
+
+        .back-btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+
+        .back-btn:hover {
+            background: #0056b3;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .refresh-btn {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .refresh-btn:hover {
+            background: #138496;
+        }
+
+        .file-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 处理结果</h1>
+            <p>您的视频背景移除已完成</p>
+        </div>
+
+        <div class="main-content">
+            <div class="success-message">
+                <h2>✅ 处理成功！</h2>
+                <p>腾讯云万象API已成功完成视频背景移除处理</p>
+            </div>
+
+            <div class="results-grid">
+                <div class="result-card">
+                    <h3>🎬 处理后视频</h3>
+                    <div class="video-container">
+                        <video class="result-video" controls>
+                            <source src="/outputs/ci_processed_video.mp4" type="video/mp4">
+                            您的浏览器不支持视频播放。
+                        </video>
+                    </div>
+                    <div class="file-info">
+                        <p><strong>文件名:</strong> ci_processed_video.mp4</p>
+                        <p><strong>处理方式:</strong> 腾讯云万象AI抠图</p>
+                        <p><strong>状态:</strong> <span style="color: #28a745;">✅ 完成</span></p>
+                    </div>
+                    <a href="/outputs/ci_processed_video.mp4" download class="download-btn">
+                        📥 下载视频
+                    </a>
+                </div>
+
+                <div class="result-card">
+                    <h3>📁 所有处理文件</h3>
+                    <div class="file-list" id="fileList">
+                        <div class="file-item">
+                            <div>
+                                <div class="file-name">ci_processed_video.mp4</div>
+                                <div class="file-size">12.3 MB - 万象AI处理</div>
+                            </div>
+                            <a href="/outputs/ci_processed_video.mp4" download class="download-btn">下载</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="/" class="back-btn">🏠 返回首页</a>
+                <a href="/static/index.html" class="back-btn">🎬 处理更多视频</a>
+                <button class="refresh-btn" onclick="loadAllFiles()">🔄 刷新文件列表</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时自动加载文件列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllFiles();
+        });
+
+        // 加载所有输出文件
+        async function loadAllFiles() {
+            try {
+                const response = await fetch('/api/v1/video/output-files');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const files = result.data.files.map(file => ({
+                        name: file.name,
+                        size: file.size,
+                        description: getFileDescription(file.name),
+                        url: file.url,
+                        modified: file.modified
+                    }));
+                    
+                    updateFileList(files);
+                    showSuccessMessage(`已加载 ${files.length} 个文件`);
+                } else {
+                    console.error('获取文件列表失败:', result.message);
+                }
+            } catch (error) {
+                console.error('加载文件列表失败:', error);
+            }
+        }
+
+        // 根据文件名生成描述
+        function getFileDescription(filename) {
+            if (filename.includes('ci_processed')) {
+                return '腾讯云万象AI处理 - 推荐';
+            } else if (filename.includes('improved')) {
+                return '改进版本';
+            } else if (filename.includes('local')) {
+                return '本地处理版本';
+            } else if (filename.includes('tencent')) {
+                return '腾讯云处理';
+            } else {
+                return '视频处理结果';
+            }
+        }
+
+        // 更新文件列表显示
+        function updateFileList(files) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${file.size} - ${file.description}</div>
+                    </div>
+                    <a href="${file.url}" download class="download-btn">下载</a>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 显示成功消息
+        function showSuccessMessage() {
+            const message = document.createElement('div');
+            message.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                z-index: 1000;
+            `;
+            message.textContent = '✅ 文件列表已刷新';
+            document.body.appendChild(message);
+
+            setTimeout(() => {
+                document.body.removeChild(message);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

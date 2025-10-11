@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云万象API测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status-success { border-left: 4px solid #28a745; }
+        .status-running { border-left: 4px solid #007bff; }
+        .status-failed { border-left: 4px solid #dc3545; }
+        .status-pending { border-left: 4px solid #ffc107; }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .job-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 腾讯云万象API测试</h1>
+            <p>检查视频抠图任务状态和下载结果</p>
+        </div>
+
+        <div class="status-card">
+            <h3>📋 当前任务状态</h3>
+            <p><strong>任务ID:</strong> <span id="currentJobId">ab11f32d6a4d511f0b65ddf415e607aff</span></p>
+            <input type="text" id="jobIdInput" class="job-input" placeholder="输入任务ID" value="ab11f32d6a4d511f0b65ddf415e607aff">
+            <button class="btn" onclick="checkJobStatus()">🔍 检查状态</button>
+            <button class="btn" onclick="downloadResult()">📥 下载结果</button>
+            <button class="btn btn-success" onclick="startAutoCheck()">🔄 自动检查</button>
+            <button class="btn" onclick="stopAutoCheck()">⏹️停止检查</button>
+        </div>
+
+        <div class="status-card" id="statusDisplay">
+            <h4>状态信息</h4>
+            <p id="statusText">点击"检查状态"开始</p>
+        </div>
+
+        <div class="status-card">
+            <h4>📄 操作日志</h4>
+            <div class="log-area" id="logArea"></div>
+            <button class="btn" onclick="clearLog()">🗑️ 清空日志</button>
+        </div>
+
+        <div class="status-card">
+            <h4>🎥 视频预览</h4>
+            <div id="videoPreview">
+                <p>处理完成后，视频将在这里显示</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoCheckInterval = null;
+        let checkCount = 0;
+
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logArea').textContent = '';
+        }
+
+        async function checkJobStatus() {
+            const jobId = document.getElementById('jobIdInput').value.trim();
+            if (!jobId) {
+                log('❌ 请输入任务ID');
+                return;
+            }
+
+            log(`🔍 检查任务状态: ${jobId}`);
+            
+            try {
+                // 直接调用腾讯云万象API检查状态
+                const response = await fetch('/check-ci-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ job_id: jobId })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                updateStatusDisplay(result);
+                log(`✅ 状态检查完成: ${result.state}`);
+
+                if (result.state === 'Success') {
+                    log('🎉 任务完成！可以下载结果了');
+                    showDownloadButton();
+                } else if (result.state === 'Failed') {
+                    log('❌ 任务失败');
+                } else {
+                    log('⏳ 任务还在处理中...');
+                }
+
+            } catch (error) {
+                log(`❌ 检查失败: ${error.message}`);
+                console.error('状态检查错误:', error);
+            }
+        }
+
+        function updateStatusDisplay(result) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const statusText = document.getElementById('statusText');
+            
+            // 移除所有状态类
+            statusDisplay.className = 'status-card';
+            
+            // 添加对应的状态类
+            switch(result.state) {
+                case 'Success':
+                    statusDisplay.classList.add('status-success');
+                    break;
+                case 'Running':
+                    statusDisplay.classList.add('status-running');
+                    break;
+                case 'Failed':
+                    statusDisplay.classList.add('status-failed');
+                    break;
+                default:
+                    statusDisplay.classList.add('status-pending');
+            }
+
+            statusText.innerHTML = `
+                <strong>状态:</strong> ${result.state}<br>
+                <strong>检查时间:</strong> ${new Date().toLocaleString()}<br>
+                <strong>任务ID:</strong> ${result.job_id || '未知'}
+            `;
+        }
+
+        function showDownloadButton() {
+            const videoPreview = document.getElementById('videoPreview');
+            videoPreview.innerHTML = `
+                <button class="btn btn-success" onclick="downloadResult()">
+                    📥 下载处理后的视频
+                </button>
+                <p>任务已完成，点击下载按钮获取结果</p>
+            `;
+        }
+
+        async function downloadResult() {
+            const jobId = document.getElementById('jobIdInput').value.trim();
+            if (!jobId) {
+                log('❌ 请输入任务ID');
+                return;
+            }
+
+            log(`📥 开始下载结果: ${jobId}`);
+            
+            try {
+                // 调用下载API
+                const response = await fetch('/download-ci-result', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ job_id: jobId })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ci_processed_${jobId}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                log('✅ 下载开始');
+                
+                // 显示视频预览
+                showVideoPreview(url);
+
+            } catch (error) {
+                log(`❌ 下载失败: ${error.message}`);
+                console.error('下载错误:', error);
+            }
+        }
+
+        function showVideoPreview(videoUrl) {
+            const videoPreview = document.getElementById('videoPreview');
+            videoPreview.innerHTML = `
+                <video controls width="100%" style="max-width: 500px; border-radius: 8px;">
+                    <source src="${videoUrl}" type="video/mp4">
+                    您的浏览器不支持视频播放
+                </video>
+                <p>✅ 视频下载完成并预览</p>
+            `;
+        }
+
+        function startAutoCheck() {
+            if (autoCheckInterval) {
+                clearInterval(autoCheckInterval);
+            }
+            
+            checkCount = 0;
+            log('🔄 开始自动检查（每30秒一次）');
+            
+            // 立即检查一次
+            checkJobStatus();
+            
+            // 设置定时检查
+            autoCheckInterval = setInterval(() => {
+                checkCount++;
+                log(`🔄 自动检查 #${checkCount}`);
+                checkJobStatus();
+                
+                // 最多检查20次（10分钟）
+                if (checkCount >= 20) {
+                    stopAutoCheck();
+                    log('⏰ 自动检查已达到最大次数，已停止');
+                }
+            }, 30000);
+        }
+
+        function stopAutoCheck() {
+            if (autoCheckInterval) {
+                clearInterval(autoCheckInterval);
+                autoCheckInterval = null;
+                log('⏹️ 自动检查已停止');
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 腾讯云万象API测试页面已加载');
+            log('💡 提示：可以输入任务ID并点击检查状态');
+        });
+    </script>
+</body>
+</html>

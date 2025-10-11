@@ -1,0 +1,35 @@
+<svg width="1024" height="768" viewBox="0 0 1024 768" xmlns="http://www.w3.org/2000/svg">
+  <!-- 黄色背景 -->
+  <rect width="1024" height="768" fill="#E6D635"/>
+  
+  <!-- 主要的椭圆形区域 -->
+  <ellipse cx="512" cy="384" rx="400" ry="300" fill="#F5F5DC" stroke="#4A90E2" stroke-width="8"/>
+  
+  <!-- 左上角的蓝色装饰 -->
+  <path d="M 100 50 Q 200 80 300 120 Q 250 180 180 200 Q 120 150 100 50" fill="#4A90E2"/>
+  
+  <!-- 右下角的白色装饰 -->
+  <path d="M 750 600 Q 850 620 920 650 Q 880 720 800 730 Q 720 680 750 600" fill="#FFFFFF" opacity="0.8"/>
+  
+  <!-- 右上角的蓝色装饰 -->
+  <path d="M 850 100 Q 950 130 980 180 Q 920 220 850 200 Q 800 150 850 100" fill="#4A90E2"/>
+  
+  <!-- SITalk 文字 -->
+  <text x="60" y="80" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#4A90E2">SITalk</text>
+  
+  <!-- 小星星装饰 -->
+  <polygon points="150,120 155,130 165,130 157,137 160,147 150,141 140,147 143,137 135,130 145,130" fill="#FFFFFF"/>
+  
+  <!-- 猴子头像 -->
+  <g transform="translate(880, 50)">
+    <!-- 头部背景圆 -->
+    <circle cx="40" cy="40" r="35" fill="#4A90E2"/>
+    <!-- 猴子脸 -->
+    <circle cx="40" cy="45" r="25" fill="#D2691E"/>
+    <!-- 眼睛 -->
+    <circle cx="33" cy="40" r="3" fill="#000"/>
+    <circle cx="47" cy="40" r="3" fill="#000"/>
+    <!-- 嘴巴 -->
+    <ellipse cx="40" cy="55" rx="8" ry="5" fill="#FF6B6B"/>
+  </g>
+</svg>
