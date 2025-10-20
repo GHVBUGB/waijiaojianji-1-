@@ -171,10 +171,16 @@ class OpenCVVideoProcessor:
             np.ndarray: 合成后的图像
         """
         try:
-            # 确保所有图像尺寸一致
-            h, w = foreground.shape[:2]
-            background = cv2.resize(background, (w, h))
+            # 确保所有图像尺寸一致，但保持背景图片原始比例
+            bg_h, bg_w = background.shape[:2]
+            fg_h, fg_w = foreground.shape[:2]
             
+            # 如果前景和背景尺寸不同，将前景缩放到背景尺寸
+            if fg_h != bg_h or fg_w != bg_w:
+                foreground = cv2.resize(foreground, (bg_w, bg_h))
+                if mask.shape[:2] != (bg_h, bg_w):
+                    mask = cv2.resize(mask, (bg_w, bg_h))
+                
             # 归一化掩码
             if mask.dtype != np.float32:
                 mask = mask.astype(np.float32) / 255.0
@@ -270,8 +276,20 @@ class OpenCVVideoProcessor:
             if background_img is None:
                 raise ValueError("无法读取背景图片")
             
-            # 调整背景图片尺寸
-            background_img = cv2.resize(background_img, (width, height))
+            # 保持背景图片原始比例，调整视频尺寸以适应背景
+            bg_height, bg_width = background_img.shape[:2]
+            
+            # 如果背景图片太大，按比例缩小但保持比例
+            if bg_height > max_resolution:
+                scale_factor = max_resolution / bg_height
+                bg_width = int(bg_width * scale_factor)
+                bg_height = max_resolution
+                background_img = cv2.resize(background_img, (bg_width, bg_height))
+                logger.info(f"背景图片按比例缩放: {bg_width}x{bg_height}")
+            
+            # 使用背景图片的尺寸作为输出尺寸
+            width = bg_width
+            height = bg_height
             
             # 设置视频编码器
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -347,7 +365,7 @@ class OpenCVVideoProcessor:
             else:
                 raise FileNotFoundError("输出文件未生成")
                 
-        except Exception as e:
+        except (cv2.error, ValueError, OSError) as e:
             error_msg = f"OpenCV视频处理失败: {str(e)}"
             logger.error(error_msg)
             return {
@@ -359,5 +377,5 @@ class OpenCVVideoProcessor:
             try:
                 cap.release()
                 out.release()
-            except:
+            except (AttributeError, cv2.error):
                 pass

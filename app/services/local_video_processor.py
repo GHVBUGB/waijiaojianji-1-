@@ -46,19 +46,18 @@ class LocalVideoProcessor:
             # 创建输出目录
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
-            # 使用FFmpeg进行视频合成
-            # 将背景图片作为底层，原视频作为上层
+            # FFmpeg命令 - 保持背景图片原始比例
             cmd = [
                 "ffmpeg",
+                "-i", input_video_path,  # 输入视频
                 "-i", background_image_path,  # 背景图片
-                "-i", input_video_path,       # 原视频
-                "-filter_complex", 
-                "[0:v]scale=1920:1080[bg];[1:v]scale=1920:1080[fg];[bg][fg]overlay=0:0",
+                "-filter_complex",
+                # 保持背景图片原始尺寸，前景视频适应背景
+                "[1:v][0:v]scale2ref=w=iw:h=ih[bg][fg];[bg][fg]overlay=(W-w)/2:(H-h)/2",
                 "-c:v", "libx264",
                 "-crf", "23",
                 "-preset", "medium",
-                "-c:a", "aac",
-                "-b:a", "128k",
+                "-c:a", "copy",  # 复制音频
                 "-y",  # 覆盖输出文件
                 output_path
             ]

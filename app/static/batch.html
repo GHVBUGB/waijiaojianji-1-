@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量视频处理 - 外教视频处理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f0ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .config-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .progress-section {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .status-card.success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .status-card.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .status-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .batch-list {
+            margin-top: 30px;
+        }
+
+        .batch-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .batch-id {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .batch-status {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .batch-status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .batch-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .batch-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .batch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .batch-stat {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .batch-stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .batch-stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        .toast.info {
+            background: #17a2b8;
+        }
+
+        .nav-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .nav-tab:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .config-form {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .batch-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 批量视频处理</h1>
+            <p>一次上传多个视频，批量处理，一键打包下载</p>
+        </div>
+
+        <div class="main-content">
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="switchTab('upload')">📤 批量上传</div>
+                <div class="nav-tab" onclick="switchTab('manage')">📋 任务管理</div>
+            </div>
+
+            <!-- 批量上传标签页 -->
+            <div id="upload-tab" class="tab-content active">
+                <!-- 文件上传区域 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span>📁</span>
+                        <span>选择视频文件</span>
+                    </div>
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">📹</div>
+                        <div class="upload-text">点击选择或拖拽视频文件到此处</div>
+                        <div class="upload-hint">支持 MP4、AVI、MOV、MKV 格式，可同时选择多个文件</div>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" multiple accept=".mp4,.avi,.mov,.mkv">
+                    
+                    <div id="fileList" class="file-list"></div>
+                </div>
+
+                <!-- 处理配置 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span>⚙️</span>
+                        <span>处理配置</span>
+                    </div>
+                    <div class="config-form">
+                        <div class="form-group">
+                            <label class="form-label">教师姓名</label>
+                            <input type="text" id="teacherName" class="form-input" placeholder="请输入教师姓名" value="Teacher">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">语言提示</label>
+                            <select id="languageHint" class="form-input">
+                                <option value="">自动检测</option>
+                                <option value="zh">中文</option>
+                                <option value="en">英文</option>
+                                <option value="ja">日文</option>
+                                <option value="ko">韩文</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">处理质量</label>
+                            <select id="quality" class="form-input">
+                                <option value="fast">快速</option>
+                                <option value="medium" selected>标准</option>
+                                <option value="high">高质量</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">输出格式</label>
+                            <select id="outputFormat" class="form-input">
+                                <option value="mp4" selected>MP4</option>
+                                <option value="avi">AVI</option>
+                                <option value="mov">MOV</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">背景图片 (可选)</label>
+                            <input type="file" id="backgroundImage" class="form-input" accept="image/*" onchange="handleBackgroundSelect(event)">
+                            <small style="color: #666; font-size: 0.9em; margin-top: 5px; display: block;">支持JPG、PNG格式，用于替换视频背景</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">或输入背景图片URL</label>
+                            <input type="url" id="backgroundUrl" class="form-input" placeholder="https://example.com/background.jpg">
+                            <small style="color: #666; font-size: 0.9em; margin-top: 5px; display: block;">直接输入图片链接地址</small>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button id="uploadBtn" class="btn" onclick="uploadFiles()">
+                            <span>📤</span>
+                            <span>开始上传</span>
+                        </button>
+                        <button id="processBtn" class="btn" onclick="startProcessing()" disabled>
+                            <span>🎬</span>
+                            <span>开始处理</span>
+                        </button>
+                        <button id="clearBtn" class="btn btn-secondary" onclick="clearFiles()">
+                            <span>🗑️</span>
+                            <span>清空文件</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 处理进度 -->
+                <div id="progressSection" class="section progress-section">
+                    <div class="section-title">
+                        <span>📊</span>
+                        <span>处理进度</span>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div id="totalFiles" class="status-number">0</div>
+                            <div class="status-label">总文件数</div>
+                        </div>
+                        <div class="status-card">
+                            <div id="completedFiles" class="status-number">0</div>
+                            <div class="status-label">已完成</div>
+                        </div>
+                        <div class="status-card">
+                            <div id="failedFiles" class="status-number">0</div>
+                            <div class="status-label">失败</div>
+                        </div>
+                        <div class="status-card">
+                            <div id="processingStatus" class="status-number">等待中</div>
+                            <div class="status-label">状态</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button id="downloadBtn" class="btn btn-success" onclick="downloadResults()" disabled>
+                            <span>📦</span>
+                            <span>下载打包结果</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务管理标签页 -->
+            <div id="manage-tab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">
+                        <span>📋</span>
+                        <span>批量任务列表</span>
+                    </div>
+                    
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <button class="btn" onclick="loadBatchJobs()">
+                            <span>🔄</span>
+                            <span>刷新列表</span>
+                        </button>
+                    </div>
+                    
+                    <div id="batchList" class="batch-list">
+                        <!-- 批量任务列表将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let currentBatchId = null;
+        let processingInterval = null;
+        let selectedBackgroundImage = null;
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 移除所有活动状态
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 激活选中的标签页
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // 如果切换到管理页面，加载任务列表
+            if (tabName === 'manage') {
+                loadBatchJobs();
+            }
+        }
+
+        // 文件选择和拖拽
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileSelect({ target: { files: e.dataTransfer.files } });
+        });
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            const videoFiles = files.filter(file => 
+                file.type.startsWith('video/') || 
+                /\.(mp4|avi|mov|mkv)$/i.test(file.name)
+            );
+            
+            selectedFiles = [...selectedFiles, ...videoFiles];
+            updateFileList();
+            
+            if (selectedFiles.length > 0) {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            
+            fileList.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="removeFile(${index})" style="padding: 8px 15px;">
+                        <span>🗑️</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            
+            if (selectedFiles.length === 0) {
+                document.getElementById('uploadBtn').disabled = true;
+            }
+        }
+
+        function clearFiles() {
+            selectedFiles = [];
+            selectedBackgroundImage = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('backgroundImage').value = '';
+            document.getElementById('backgroundUrl').value = '';
+            updateFileList();
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('processBtn').disabled = true;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 上传文件
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) {
+                showToast('请先选择视频文件', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            formData.append('teacher_name', document.getElementById('teacherName').value || 'Teacher');
+            formData.append('language_hint', document.getElementById('languageHint').value);
+            formData.append('quality', document.getElementById('quality').value);
+            formData.append('output_format', document.getElementById('outputFormat').value);
+            
+            // 添加背景图片
+            if (selectedBackgroundImage) {
+                formData.append('background_image', selectedBackgroundImage);
+            } else if (document.getElementById('backgroundUrl').value) {
+                formData.append('background_url', document.getElementById('backgroundUrl').value);
+            }
+
+            try {
+                document.getElementById('uploadBtn').disabled = true;
+                document.getElementById('uploadBtn').innerHTML = '<span>📤</span><span>上传中...</span>';
+                
+                const response = await fetch('/api/v1/batch/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentBatchId = result.data.batch_id;
+                    showToast(`上传成功！自动开始处理，批次ID: ${currentBatchId}`, 'success');
+
+                    // 立即显示进度并开始监控
+                    document.getElementById('progressSection').style.display = 'block';
+                    document.getElementById('totalFiles').textContent = result.data.total_files || selectedFiles.length;
+                    document.getElementById('completedFiles').textContent = '0';
+                    document.getElementById('failedFiles').textContent = '0';
+                    document.getElementById('processingStatus').textContent = '处理中';
+                    startProgressMonitoring();
+
+                    // 仍保留手动按钮，作为兜底（但禁用）
+                    document.getElementById('processBtn').disabled = true;
+                } else {
+                    throw new Error(result.message || '上传失败');
+                }
+            } catch (error) {
+                console.error('上传错误:', error);
+                showToast('上传失败: ' + error.message, 'error');
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+                document.getElementById('uploadBtn').innerHTML = '<span>📤</span><span>开始上传</span>';
+            }
+        }
+
+        // 开始处理
+        async function startProcessing() {
+            if (!currentBatchId) {
+                showToast('请先上传文件', 'error');
+                return;
+            }
+
+            if (selectedFiles.length === 0) {
+                showToast('没有选择要处理的文件', 'error');
+                return;
+            }
+
+            const requestData = {
+                teacher_name: document.getElementById('teacherName').value || 'Teacher',
+                language_hint: document.getElementById('languageHint').value,
+                quality: document.getElementById('quality').value,
+                output_format: document.getElementById('outputFormat').value
+            };
+
+            try {
+                document.getElementById('processBtn').disabled = true;
+                document.getElementById('processBtn').innerHTML = '<span>🎬</span><span>启动处理...</span>';
+                
+                showToast('正在启动批量处理...', 'info');
+                
+                const response = await fetch(`/api/v1/batch/process/${currentBatchId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('批量处理已开始，正在逐个处理视频...', 'success');
+                    document.getElementById('progressSection').style.display = 'block';
+                    
+                    // 初始化进度显示
+                    document.getElementById('totalFiles').textContent = selectedFiles.length;
+                    document.getElementById('completedFiles').textContent = '0';
+                    document.getElementById('failedFiles').textContent = '0';
+                    document.getElementById('processingStatus').textContent = '处理中';
+                    
+                    startProgressMonitoring();
+                } else {
+                    throw new Error(result.message || '处理启动失败');
+                }
+            } catch (error) {
+                console.error('处理错误:', error);
+                showToast('处理启动失败: ' + error.message, 'error');
+                document.getElementById('processBtn').disabled = false;
+                document.getElementById('processBtn').innerHTML = '<span>🎬</span><span>开始处理</span>';
+            }
+        }
+
+        // 监控处理进度
+        function startProgressMonitoring() {
+            if (processingInterval) {
+                clearInterval(processingInterval);
+            }
+            
+            console.log('开始监控批量处理进度:', currentBatchId);
+            
+            processingInterval = setInterval(async () => {
+                try {
+                    console.log('检查批量处理进度...');
+                    const response = await fetch(`/api/v1/batch/status/${currentBatchId}`);
+                    const result = await response.json();
+                    
+                    console.log('批量处理状态:', result);
+                    
+                    if (result.success) {
+                        updateProgress(result.data);
+                        
+                        if (result.data.status === 'completed' || result.data.status === 'partial') {
+                            clearInterval(processingInterval);
+                            processingInterval = null;
+                            
+                            document.getElementById('processBtn').disabled = false;
+                            document.getElementById('processBtn').innerHTML = '<span>🎬</span><span>处理完成</span>';
+                            
+                            if (result.data.download_ready) {
+                                document.getElementById('downloadBtn').disabled = false;
+                                showToast('批量处理完成，可以下载结果了！', 'success');
+                            } else {
+                                showToast('批量处理完成，正在准备下载包...', 'info');
+                            }
+                        } else if (result.data.status === 'failed') {
+                            clearInterval(processingInterval);
+                            processingInterval = null;
+                            
+                            document.getElementById('processBtn').disabled = false;
+                            document.getElementById('processBtn').innerHTML = '<span>🎬</span><span>处理失败</span>';
+                            showToast('批量处理失败', 'error');
+                        }
+                    } else {
+                        console.error('获取状态失败:', result.message);
+                    }
+                } catch (error) {
+                    console.error('获取进度失败:', error);
+                    showToast('获取进度失败: ' + error.message, 'error');
+                }
+            }, 2000); // 每2秒检查一次，更频繁
+        }
+
+        function updateProgress(data) {
+            const progress = data.total_files > 0 ? (data.completed_files / data.total_files) * 100 : 0;
+            
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('totalFiles').textContent = data.total_files;
+            document.getElementById('completedFiles').textContent = data.completed_files;
+            document.getElementById('failedFiles').textContent = data.failed_files;
+            document.getElementById('processingStatus').textContent = getStatusText(data.status);
+            
+            // 更新状态卡片样式
+            const statusCards = document.querySelectorAll('.status-card');
+            statusCards[1].className = 'status-card' + (data.completed_files > 0 ? ' success' : '');
+            statusCards[2].className = 'status-card' + (data.failed_files > 0 ? ' error' : '');
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'uploaded': '已上传',
+                'processing': '处理中',
+                'completed': '已完成',
+                'partial': '部分完成',
+                'failed': '失败'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 下载结果
+        async function downloadResults() {
+            if (!currentBatchId) {
+                showToast('没有可下载的结果', 'error');
+                return;
+            }
+
+            try {
+                document.getElementById('downloadBtn').disabled = true;
+                document.getElementById('downloadBtn').innerHTML = '<span>📦</span><span>准备下载...</span>';
+                
+                const response = await fetch(`/api/v1/batch/download/${currentBatchId}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `batch_${currentBatchId.substring(0, 8)}_${new Date().toISOString().slice(0, 10)}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('下载开始', 'success');
+                } else {
+                    throw new Error('下载失败');
+                }
+            } catch (error) {
+                console.error('下载错误:', error);
+                showToast('下载失败: ' + error.message, 'error');
+            } finally {
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('downloadBtn').innerHTML = '<span>📦</span><span>下载打包结果</span>';
+            }
+        }
+
+        // 加载批量任务列表
+        async function loadBatchJobs() {
+            try {
+                const response = await fetch('/api/v1/batch/list');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayBatchJobs(result.data.jobs);
+                } else {
+                    throw new Error(result.message || '获取任务列表失败');
+                }
+            } catch (error) {
+                console.error('加载任务列表错误:', error);
+                showToast('加载任务列表失败: ' + error.message, 'error');
+            }
+        }
+
+        function displayBatchJobs(jobs) {
+            const batchList = document.getElementById('batchList');
+            
+            if (jobs.length === 0) {
+                batchList.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">暂无批量任务</div>';
+                return;
+            }
+            
+            batchList.innerHTML = jobs.map(job => `
+                <div class="batch-item">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-id">${job.batch_id}</div>
+                            <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                                创建时间: ${new Date(job.created_at).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="batch-status ${job.status}">${getStatusText(job.status)}</div>
+                    </div>
+                    
+                    <div class="batch-stats">
+                        <div class="batch-stat">
+                            <div class="batch-stat-number">${job.total_files}</div>
+                            <div class="batch-stat-label">总文件</div>
+                        </div>
+                        <div class="batch-stat">
+                            <div class="batch-stat-number">${job.completed_files}</div>
+                            <div class="batch-stat-label">已完成</div>
+                        </div>
+                        <div class="batch-stat">
+                            <div class="batch-stat-number">${job.failed_files}</div>
+                            <div class="batch-stat-label">失败</div>
+                        </div>
+                        <div class="batch-stat">
+                            <div class="batch-stat-number">${job.download_ready ? '✅' : '❌'}</div>
+                            <div class="batch-stat-label">可下载</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        ${job.download_ready ? `
+                            <button class="btn btn-success" onclick="downloadBatchResults('${job.batch_id}')">
+                                <span>📦</span>
+                                <span>下载结果</span>
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-danger" onclick="deleteBatchJob('${job.batch_id}')">
+                            <span>🗑️</span>
+                            <span>删除任务</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 下载指定批次的结果
+        async function downloadBatchResults(batchId) {
+            try {
+                const response = await fetch(`/api/v1/batch/download/${batchId}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `batch_${batchId.substring(0, 8)}_${new Date().toISOString().slice(0, 10)}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('下载开始', 'success');
+                } else {
+                    throw new Error('下载失败');
+                }
+            } catch (error) {
+                console.error('下载错误:', error);
+                showToast('下载失败: ' + error.message, 'error');
+            }
+        }
+
+        // 删除批量任务
+        async function deleteBatchJob(batchId) {
+            if (!confirm('确定要删除这个批量任务吗？这将删除所有相关文件。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/v1/batch/${batchId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('任务删除成功', 'success');
+                    loadBatchJobs(); // 重新加载列表
+                } else {
+                    throw new Error(result.message || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除错误:', error);
+                showToast('删除失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // 处理背景图片选择
+        function handleBackgroundSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // 验证文件类型
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                if (!allowedTypes.includes(file.type)) {
+                    showToast('请选择JPG或PNG格式的图片', 'error');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // 验证文件大小 (最大10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('图片文件不能超过10MB', 'error');
+                    event.target.value = '';
+                    return;
+                }
+                
+                selectedBackgroundImage = file;
+                showToast(`已选择背景图片: ${file.name}`, 'success');
+                
+                // 清空URL输入框
+                document.getElementById('backgroundUrl').value = '';
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化时加载任务列表
+            loadBatchJobs();
+        });
+    </script>
+</body>
+</html>

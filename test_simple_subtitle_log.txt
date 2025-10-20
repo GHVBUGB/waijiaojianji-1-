@@ -1,0 +1,19 @@
+Command: C:\\ffmpeg\\bin\\ffmpeg.exe -loglevel info -i test_simple.mp4 -vf subtitles=filename='C\:/Users/guhongji/Desktop/44/test_simple.srt':charenc=UTF-8:force_style='FontName=Microsoft YaHei Bold\,FontSize=20\,PrimaryColour=&H00000000\,OutlineColour=&H00FFFFFF\,BorderStyle=1\,Outline=3\,Shadow=0\,Alignment=2\,MarginV=10\,Bold=1' -c:v libx264 -crf 18 -preset medium -c:a copy -y outputs\style_check.mp4
+Return code: 4294967294
+STDERR:
+ffmpeg version 8.0-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15.2.0 (Rev8, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-openal --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      60.  8.100 / 60.  8.100
+  libavcodec     62. 11.100 / 62. 11.100
+  libavformat    62.  3.100 / 62.  3.100
+  libavdevice    62.  1.100 / 62.  1.100
+  libavfilter    11.  4.100 / 11.  4.100
+  libswscale      9.  1.100 /  9.  1.100
+  libswresample   6.  1.100 /  6.  1.100
+[in#0 @ 000001bfe0124100] Error opening input: No such file or directory
+Error opening input file test_simple.mp4.
+Error opening input files: No such file or directory
+
+STDOUT:
+

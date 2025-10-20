@@ -503,12 +503,52 @@ class TencentVideoService:
             output_path = os.path.join(output_dir, f"ci_processed_{timestamp}.mp4")
             await self._download_from_cos(output_key, output_path)
             
+            # 步骤5: 标准化视频格式以确保字幕兼容性
+            logger.info("🔧 步骤5: 标准化视频格式")
+            normalized_path = output_path.replace(".mp4", "_normalized.mp4")
+            await self._normalize_video_for_subtitles(output_path, normalized_path)
+            
+            # 替换为标准化后的视频
+            if os.path.exists(normalized_path) and os.path.getsize(normalized_path) > 0:
+                import shutil
+                shutil.move(normalized_path, output_path)
+                logger.info(f"✅ 视频已标准化: {output_path}")
+            
             logger.info(f"✅ 万象API处理完成: {output_path}")
             return output_path
             
         except Exception as e:
             logger.error(f"💥 万象API处理失败: {str(e)}")
             raise e
+    
+    async def _normalize_video_for_subtitles(self, input_video: str, output_video: str) -> None:
+        """标准化视频格式以确保字幕烧录兼容性"""
+        import subprocess
+        import shutil
+        
+        ffmpeg = os.getenv("FFMPEG_PATH") or shutil.which("ffmpeg") or r"C:\ffmpeg\bin\ffmpeg.exe"
+        
+        # 重新编码为标准H.264+AAC，确保元数据完整
+        cmd = [
+            ffmpeg,
+            "-i", input_video,
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "20",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-movflags", "+faststart",
+            "-y", output_video
+        ]
+        
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                logger.info(f"视频标准化成功: {output_video}")
+            else:
+                logger.error(f"视频标准化失败: {result.stderr}")
+        except Exception as e:
+            logger.error(f"视频标准化异常: {str(e)}")
     
     async def upload_background_image(self, image_file_path: str) -> str:
         """

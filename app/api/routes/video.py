@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from typing import Optional
+from pydantic import BaseModel
 import os
 import shutil
 import uuid
@@ -75,6 +76,7 @@ async def upload_and_process_video(
             job_id,
             upload_path,
             teacher_name,
+            file.filename,  # 传递原始文件名用于名字提取
             None,  # language_hint 暂时不使用
             quality,
             output_format,
@@ -134,7 +136,7 @@ async def get_processing_progress(job_id: str):
 @router.get("/download/{job_id}")
 async def download_processed_video(job_id: str):
     """
-    下载处理后的视频
+    下载处理后的视频 - 优先返回带字幕的版本
     """
     try:
         progress = video_processor.get_job_progress(job_id)
@@ -150,11 +152,22 @@ async def download_processed_video(job_id: str):
         if not processed_video_path or not os.path.exists(processed_video_path):
             raise HTTPException(status_code=404, detail="处理后的视频文件不存在")
 
-        return FileResponse(
-            processed_video_path,
-            media_type="video/mp4",
-            filename=os.path.basename(processed_video_path)
-        )
+        # 检查是否有带字幕的版本
+        subtitle_video_path = processed_video_path.replace('.mp4', '_with_subtitles.mp4')
+        if os.path.exists(subtitle_video_path):
+            logger.info(f"返回带字幕的视频: {subtitle_video_path}")
+            return FileResponse(
+                subtitle_video_path,
+                media_type="video/mp4",
+                filename=os.path.basename(subtitle_video_path)
+            )
+        else:
+            logger.info(f"返回原始处理视频: {processed_video_path}")
+            return FileResponse(
+                processed_video_path,
+                media_type="video/mp4",
+                filename=os.path.basename(processed_video_path)
+            )
 
     except HTTPException:
         raise
@@ -276,3 +289,96 @@ async def list_output_files():
     except Exception as e:
         logger.error(f"获取输出文件列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail="获取文件列表失败")
+
+@router.post("/retry/{job_id}", response_model=ApiResponse)
+async def retry_job(job_id: str):
+    """
+    重新处理失败的任务（顺序与单个处理一致）
+    """
+    try:
+        progress = video_processor.get_job_progress(job_id)
+        if not progress:
+            raise HTTPException(status_code=404, detail="任务不存在")
+
+        result = progress.get("result", {})
+        original_file = result.get("original_file") or progress.get("original_file")
+        teacher_name = result.get("teacher_name") or progress.get("teacher_name") or "Teacher"
+
+        if not original_file or not os.path.exists(original_file):
+            raise HTTPException(status_code=400, detail="无法找到原始视频文件，无法重试")
+
+        # 新建任务ID以避免覆盖旧任务
+        new_job_id = str(uuid.uuid4())
+
+        # 触发重新处理
+        await video_processor.process_teacher_video_background(
+            job_id=new_job_id,
+            video_path=original_file,
+            teacher_name=teacher_name,
+            original_filename=os.path.basename(original_file)
+        )
+
+        return ApiResponse(
+            success=True,
+            message="重试任务已启动",
+            data={"old_job_id": job_id, "new_job_id": new_job_id}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重试任务失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ZipRequest(BaseModel):
+    job_ids: list[str]
+    include_subtitles: bool = True
+
+@router.post("/zip")
+async def zip_results(request: ZipRequest):
+    """
+    将多个任务的输出打包为ZIP并返回下载
+    """
+    try:
+        if not request.job_ids:
+            raise HTTPException(status_code=400, detail="缺少job_ids")
+
+        from zipfile import ZipFile, ZIP_DEFLATED
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_dir = os.path.join(settings.OUTPUT_DIR, "zips")
+        os.makedirs(zip_dir, exist_ok=True)
+        zip_path = os.path.join(zip_dir, f"pack_{ts}.zip")
+
+        added = 0
+        with ZipFile(zip_path, "w", compression=ZIP_DEFLATED) as z:
+            for job_id in request.job_ids:
+                progress = video_processor.get_job_progress(job_id)
+                if not progress or progress.get("status") != "completed":
+                    continue
+                result = progress.get("result", {})
+                processed_video = result.get("processed_video")
+                subtitle_file = result.get("subtitle_file")
+
+                if processed_video and os.path.exists(processed_video):
+                    z.write(processed_video, arcname=f"videos/{os.path.basename(processed_video)}")
+                    added += 1
+                # 带字幕版本优先
+                sub_video = processed_video.replace('.mp4', '_with_subtitles.mp4') if processed_video else None
+                if sub_video and os.path.exists(sub_video):
+                    z.write(sub_video, arcname=f"videos/{os.path.basename(sub_video)}")
+
+                if request.include_subtitles and subtitle_file and os.path.exists(subtitle_file):
+                    z.write(subtitle_file, arcname=f"subtitles/{os.path.basename(subtitle_file)}")
+
+        if added == 0:
+            raise HTTPException(status_code=400, detail="没有可打包的结果文件")
+
+        filename = os.path.basename(zip_path)
+        return FileResponse(zip_path, media_type="application/zip", filename=filename)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"打包下载失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

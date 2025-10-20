@@ -39,6 +39,29 @@
             margin-bottom: 10px;
         }
 
+        .nav-menu {
+            background: #f8f9fa;
+            padding: 15px 0;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .nav-link {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
         .header p {
             font-size: 1.2em;
             opacity: 0.9;
@@ -369,6 +392,12 @@
             <p>智能视频背景移除 + 专业处理</p>
         </div>
 
+        <div class="nav-menu">
+            <a href="/static/index.html" class="nav-link">🎬 单个处理</a>
+            <a href="/static/batch.html" class="nav-link">📦 批量处理</a>
+            <a href="/docs" class="nav-link">📚 API文档</a>
+        </div>
+
         <div class="main-content">
             <!-- 文件上传区域 -->
             <div class="upload-section" id="uploadArea">
@@ -524,6 +553,9 @@
         </div>
     </div>
 
+    <!-- 将大型内联脚本移动到外部文件 -->
+    <script src="js/main.js"></script>
+
     <script>
         // 全局变量
         let selectedFiles = [];
@@ -575,6 +607,18 @@
                 const files = Array.from(e.target.files);
                 handleFileSelection(files);
             });
+
+            // 动态添加“打包下载已完成”浮动按钮
+            let packBtn = document.getElementById('packCompletedBtn');
+            if (!packBtn) {
+                packBtn = document.createElement('button');
+                packBtn.id = 'packCompletedBtn';
+                packBtn.className = 'btn-download';
+                packBtn.textContent = '📦 打包下载已完成';
+                packBtn.style.cssText = 'position:fixed; right:20px; bottom:20px; z-index:1000; padding:12px 18px;';
+                packBtn.onclick = zipCompletedJobs;
+                document.body.appendChild(packBtn);
+            }
         }
 
         // 处理文件选择
@@ -651,9 +695,8 @@
                 for (let i = 0; i < selectedFiles.length; i++) {
                     currentJobIndex = i;
                     await processFile(selectedFiles[i], i);
-                    updateProgress((i + 1) / selectedFiles.length * 100);
+                    updateProgress(((i + 1) / selectedFiles.length) * 100);
                 }
-                
                 showToast('所有文件处理完成！', 'success');
                 loadResults();
             } catch (error) {
@@ -721,11 +764,12 @@
                 if (error.name === 'AbortError') {
                     updateFileStatus(index, 'error', '上传超时，请检查网络连接');
                 } else if (retryCount < maxRetries) {
-                    // 重试
+                    // 严格串行重试：等待后再同步重试，避免并发
                     const delay = Math.pow(2, retryCount) * 1000; // 指数退避
                     updateFileStatus(index, 'processing', `${delay/1000}秒后重试...`);
-                    console.log(`[UI] processFile - schedule retry in ${delay}ms`);
-                    setTimeout(() => processFile(file, index, retryCount + 1), delay);
+                    console.log(`[UI] processFile - retry after ${delay}ms (sequential)`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return await processFile(file, index, retryCount + 1);
                 } else {
                     // 达到最大重试次数
                     let errorMessage = '处理失败';
@@ -769,10 +813,8 @@
 
         // 轮询任务状态
         async function pollJobStatus(jobId, fileIndex) {
-            const maxAttempts = 60; // 最多轮询5分钟
-            let attempts = 0;
-
-            const poll = async () => {
+            // 持续轮询直到完成/失败（无超时），避免长视频误判为超时
+            while (true) {
                 try {
                     const response = await fetch(`/api/v1/video/progress/${jobId}`);
                     const result = await response.json();
@@ -780,33 +822,26 @@
                     if (result.success) {
                         const status = result.data.status;
                         const progress = result.data.progress || 0;
-                        
-                        updateFileStatus(fileIndex, status, `${progress}%`);
+                        const step = result.data.current_step || '';
+                        updateFileStatus(fileIndex, status, step ? `${progress}% · ${step}` : `${progress}%`);
                         
                         if (status === 'completed') {
                             updateFileStatus(fileIndex, 'completed', '处理完成');
                             updateProcessingStats('completed', result.data.processing_time || 0);
                             return;
-                        } else if (status === 'failed') {
+                        }
+                        if (status === 'failed') {
                             updateFileStatus(fileIndex, 'error', '处理失败');
                             updateProcessingStats('failed');
                             return;
                         }
                     }
-                    
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        setTimeout(poll, 5000); // 5秒后重新检查
-                    } else {
-                        updateFileStatus(fileIndex, 'error', '处理超时');
-                    }
                 } catch (error) {
                     console.error('状态查询错误:', error);
-                    updateFileStatus(fileIndex, 'error', '状态查询失败');
+                    // 网络抖动时等待后重试
                 }
-            };
-
-            await poll();
+                await new Promise(r => setTimeout(r, 5000));
+            }
         }
 
         // 更新文件状态
@@ -901,10 +936,59 @@
                     <button class="btn-small btn-download" onclick="downloadResult('${job.jobId}')">
                         下载处理后视频
                     </button>
+                    <button class="btn-small" onclick="retryJob('${job.jobId}')">重试</button>
                 </div>
             `;
             
             return card;
+        }
+
+        // 打包下载全部已完成任务
+        async function zipCompletedJobs() {
+            try {
+                const respJobs = await fetch('/api/v1/video/jobs');
+                const jobs = await respJobs.json();
+                if (!jobs.success) { showToast('获取任务列表失败', 'error'); return; }
+                const ids = (jobs.data.jobs || []).filter(j => j.status === 'completed').map(j => j.job_id);
+                if (ids.length === 0) { showToast('没有可打包的结果', 'error'); return; }
+
+                const resp = await fetch('/api/v1/video/zip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_ids: ids, include_subtitles: true })
+                });
+                if (!resp.ok) { showToast('打包失败', 'error'); return; }
+                const blob = await resp.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `packed_${new Date().toISOString().slice(0,10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showToast('打包下载开始', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('打包出现错误', 'error');
+            }
+        }
+
+        // 重试失败任务
+        async function retryJob(jobId) {
+            try {
+                const resp = await fetch(`/api/v1/video/retry/${jobId}`, { method: 'POST' });
+                if (!resp.ok) { showToast('重试启动失败', 'error'); return; }
+                const json = await resp.json();
+                if (json.success) {
+                    showToast('已启动重试', 'success');
+                } else {
+                    showToast('重试失败', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('重试出现错误', 'error');
+            }
         }
 
         // 下载字幕

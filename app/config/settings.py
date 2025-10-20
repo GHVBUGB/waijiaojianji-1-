@@ -43,6 +43,41 @@ class Settings(BaseSettings):
     AUDIO_SAMPLE_RATE: int = 16000
     VIDEO_OUTPUT_FORMAT: str = "mp4"
     
+    # 字幕配置
+    SUBTITLE_ENABLED: bool = True
+    ASR_SERVICE: str = "xunfei"  # xunfei | tencent
+    BURN_SUBTITLES_TO_VIDEO: bool = True
+    GENERATE_SUBTITLE_FILE: bool = True
+    SUBTITLE_FONT_SIZE: int = 20
+    SUBTITLE_FONT_COLOR: str = "black"
+    SUBTITLE_OUTLINE_COLOR: str = "black"
+    SUBTITLE_OUTLINE_WIDTH: int = 3
+    SUBTITLE_SHADOW: int = 2
+    SUBTITLE_BOLD: bool = True
+    SUBTITLE_ALIGNMENT: int = 2
+    
+    # 基础美颜（小幅度，统一应用）
+    BASIC_BEAUTY_ENABLED: bool = True
+    BASIC_BEAUTY_BRIGHTNESS: float = 0.03  # 降低亮度避免泛白
+    BASIC_BEAUTY_CONTRAST: float = 1.08    # 增强对比度
+    BASIC_BEAUTY_SATURATION: float = 1.12  # 轻微增强饱和度
+    BASIC_BEAUTY_GAMMA: float = 1.05       # 伽马调整
+    BASIC_BEAUTY_SHARPNESS: float = 0.3   # 锐化强度
+    BASIC_BEAUTY_DENOISE: float = 0.8      # 降噪强度
+    
+    # 画质优化（最终增强）
+    QUALITY_ENHANCEMENT_ENABLED: bool = True
+    
+    # 合成前景统一缩放（固定比例对齐）
+    FG_SCALE_RATIO: float = 0.20         # 前景高度相对背景高度的比例 (0~1)
+    FG_BOTTOM_MARGIN: int = 80           # 前景距底部像素边距
+    FG_TOP_MARGIN: int = 80              # 前景距顶部像素边距（用于防止顶边贴边）
+    FG_SAFE_MARGIN_RATIO: float = 0.08   # 左右安全边距占背景高度的比例，防止触边
+
+    # 并发控制
+    MAX_PARALLEL_JOBS: int = 1           # 同时处理的视频数量上限（回归单工串行）
+    MAX_PARALLEL_ASR: int = 1            # ASR并发上限（建议1，稳定）
+    
     # 腾讯云优化配置
     TENCENT_FRAME_SKIP: int = 5
     TENCENT_MOTION_DETECTION: bool = True

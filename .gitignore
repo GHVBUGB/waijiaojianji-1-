@@ -55,6 +55,7 @@ logs/
 # Output files
 outputs/
 temp/
+uploads/
 
 # Environment variables
 .env

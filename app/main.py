@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 
 from app.config.settings import settings
-from app.api.routes import video, health
+from app.api.routes import video, batch, health
 from app.utils.logger import setup_logging
 
 # 设置日志
@@ -61,6 +61,7 @@ app.mount("/outputs", StaticFiles(directory=settings.OUTPUT_DIR), name="outputs"
 # 注册路由
 app.include_router(health.router)
 app.include_router(video.router)
+app.include_router(batch.router)
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
