@@ -1,6 +1,11 @@
 {
   "version": 2,
-  "builds": [{ "src": "api/**/*.py", "use": "@vercel/python@3.11" }],
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
     { "src": "/static/(.*)", "dest": "/app/static/$1" },
     { "src": "/uploads/(.*)", "dest": "/uploads/$1" },
