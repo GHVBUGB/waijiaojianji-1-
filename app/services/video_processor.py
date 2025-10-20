@@ -19,6 +19,7 @@ else:
 
 # 导入字幕相关服务
 from .tencent_speech_service import TencentASRService
+from app.utils.redis_lock import RedisAsyncLock
 
 logger = logging.getLogger(__name__)
 
@@ -194,62 +195,70 @@ class VideoProcessorService:
                             self._update_progress(job_id, 75, "开始生成字幕...")
                             logger.info(f"[{job_id}] 开始语音转文字处理")
                             
-                            # 检查ASR服务类型并调用相应的方法
-                            asr_service_type = getattr(settings, 'ASR_SERVICE', 'tencent').lower()
-                            
-                            if asr_service_type == 'xunfei':
-                                # 讯飞ASR服务：先提取音频，然后转录
-                                import subprocess
+                            # 使用全局Redis分布式锁，确保跨实例ASR串行
+                            async with RedisAsyncLock(
+                                settings.REDIS_URL,
+                                settings.ASR_LOCK_KEY,
+                                ttl_ms=settings.ASR_LOCK_TTL_MS,
+                                retry_interval_ms=500,
+                                max_wait_ms=10 * 60 * 1000
+                            ):
+                                # 检查ASR服务类型并调用相应的方法
+                                asr_service_type = getattr(settings, 'ASR_SERVICE', 'tencent').lower()
                                 
-                                # 从视频中提取音频
-                                audio_path = final_output_path.replace('.mp4', '_audio.wav')
-                                subprocess.run([
-                                    'ffmpeg', '-i', final_output_path, '-vn', '-acodec', 'pcm_s16le',
-                                    '-ar', '16000', '-ac', '1', '-y', audio_path
-                                ], check=True, capture_output=True)
-                                
-                                # 使用讯飞ASR转录音频
-                                segments = self.speech_service.transcribe_audio(audio_path)
-                                
-                                # 清理临时音频文件
-                                if os.path.exists(audio_path):
-                                    os.remove(audio_path)
-                                
-                                # 转换为标准格式
-                                transcript_result = {
-                                    "success": True,
-                                    "segments": [{"text": seg["text"], "start": seg["start_time"], "end": seg["end_time"]} 
-                                               for seg in segments] if segments else []
-                                }
-                            else:
-                                # 腾讯云ASR服务：使用原有接口
-                                transcript_result = await self.speech_service.transcribe_video(final_output_path, language_hint or "zh-CN")
-                            
-                            if transcript_result.get("success") and transcript_result.get("segments"):
-                                segments = transcript_result["segments"]
-                                logger.info(f"[{job_id}] 语音识别成功，识别到 {len(segments)} 个片段")
-                                
-                                # 生成字幕文件
-                                subtitle_file = await self._generate_subtitle_file(segments, final_output_path)
-                                
-                                if subtitle_file:
-                                    logger.info(f"[{job_id}] 字幕文件生成成功: {subtitle_file}")
+                                if asr_service_type == 'xunfei':
+                                    # 讯飞ASR服务：先提取音频，然后转录
+                                    import subprocess
                                     
-                                    # 将字幕烧录到抠图后的视频中
-                                    if getattr(settings, 'BURN_SUBTITLES_TO_VIDEO', True):
-                                        self._update_progress(job_id, 85, "正在烧录字幕到抠图视频...")
-                                        final_with_subtitles = await self._burn_subtitles_to_video(final_output_path, subtitle_file)
-                                        if final_with_subtitles:
-                                            final_output_path = final_with_subtitles
-                                            logger.info(f"[{job_id}] 字幕烧录成功，最终输出: {final_output_path}")
-                                        else:
-                                            logger.warning(f"[{job_id}] 字幕烧录失败，使用无字幕版本")
+                                    # 从视频中提取音频
+                                    audio_path = final_output_path.replace('.mp4', '_audio.wav')
+                                    subprocess.run([
+                                        'ffmpeg', '-i', final_output_path, '-vn', '-acodec', 'pcm_s16le',
+                                        '-ar', '16000', '-ac', '1', '-y', audio_path
+                                    ], check=True, capture_output=True)
+                                    
+                                    # 使用讯飞ASR转录音频
+                                    segments = self.speech_service.transcribe_audio(audio_path)
+                                    
+                                    # 清理临时音频文件
+                                    if os.path.exists(audio_path):
+                                        os.remove(audio_path)
+                                    
+                                    # 转换为标准格式
+                                    transcript_result = {
+                                        "success": True,
+                                        "segments": [{"text": seg["text"], "start": seg["start_time"], "end": seg["end_time"]} 
+                                                   for seg in segments] if segments else []
+                                    }
                                 else:
-                                    logger.warning(f"[{job_id}] 字幕文件生成失败")
-                            else:
-                                logger.warning(f"[{job_id}] 语音识别失败或无识别结果")
-                                if transcript_result.get("error"):
-                                    logger.error(f"[{job_id}] ASR错误: {transcript_result['error']}")
+                                    # 腾讯云ASR服务：使用原有接口
+                                    transcript_result = await self.speech_service.transcribe_video(final_output_path, language_hint or "zh-CN")
+                                
+                                if transcript_result.get("success") and transcript_result.get("segments"):
+                                    segments = transcript_result["segments"]
+                                    logger.info(f"[{job_id}] 语音识别成功，识别到 {len(segments)} 个片段")
+                                    
+                                    # 生成字幕文件
+                                    subtitle_file = await self._generate_subtitle_file(segments, final_output_path)
+                                    
+                                    if subtitle_file:
+                                        logger.info(f"[{job_id}] 字幕文件生成成功: {subtitle_file}")
+                                        
+                                        # 将字幕烧录到抠图后的视频中
+                                        if getattr(settings, 'BURN_SUBTITLES_TO_VIDEO', True):
+                                            self._update_progress(job_id, 85, "正在烧录字幕到抠图视频...")
+                                            final_with_subtitles = await self._burn_subtitles_to_video(final_output_path, subtitle_file)
+                                            if final_with_subtitles:
+                                                final_output_path = final_with_subtitles
+                                                logger.info(f"[{job_id}] 字幕烧录成功，最终输出: {final_output_path}")
+                                            else:
+                                                logger.warning(f"[{job_id}] 字幕烧录失败，使用无字幕版本")
+                                    else:
+                                        logger.warning(f"[{job_id}] 字幕文件生成失败")
+                                else:
+                                    logger.warning(f"[{job_id}] 语音识别失败或无识别结果")
+                                    if transcript_result.get("error"):
+                                        logger.error(f"[{job_id}] ASR错误: {transcript_result['error']}")
                         except Exception as e:
                             logger.error(f"[{job_id}] 字幕处理异常: {str(e)}")
                             # 字幕处理失败不影响主流程，继续使用抠图后的视频
@@ -395,7 +404,7 @@ class VideoProcessorService:
             ffmpeg_path = os.getenv('FFMPEG_PATH', 'ffmpeg')
             if ffmpeg_path == 'ffmpeg':
                 # 如果是默认值，尝试使用完整路径
-                ffmpeg_path = r'C:\ffmpeg\bin\ffmpeg.exe'
+                ffmpeg_path = r'C:\\ffmpeg\\bin\\ffmpeg.exe'
             
             # 转换为相对路径以避免Windows路径问题
             try:

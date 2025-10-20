@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     # 并发控制
     MAX_PARALLEL_JOBS: int = 1           # 同时处理的视频数量上限（回归单工串行）
     MAX_PARALLEL_ASR: int = 1            # ASR并发上限（建议1，稳定）
+
+    # 全局分布式锁（Vercel 多实例）
+    REDIS_URL: Optional[str] = os.getenv("REDIS_URL")
+    ASR_LOCK_KEY: str = "asr:global:lock"
+    ASR_LOCK_TTL_MS: int = 15 * 60 * 1000
     
     # 腾讯云优化配置
     TENCENT_FRAME_SKIP: int = 5
