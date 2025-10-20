@@ -210,10 +210,15 @@ class VideoProcessorService:
                                     # 讯飞ASR服务：先提取音频，然后转录
                                     import subprocess
                                     
+                                    # 获取FFmpeg路径
+                                    ffmpeg_path = os.getenv('FFMPEG_PATH', 'ffmpeg')
+                                    if ffmpeg_path == 'ffmpeg':
+                                        ffmpeg_path = r'C:\ffmpeg\bin\ffmpeg.exe'
+                                    
                                     # 从视频中提取音频
                                     audio_path = final_output_path.replace('.mp4', '_audio.wav')
                                     subprocess.run([
-                                        'ffmpeg', '-i', final_output_path, '-vn', '-acodec', 'pcm_s16le',
+                                        ffmpeg_path, '-i', final_output_path, '-vn', '-acodec', 'pcm_s16le',
                                         '-ar', '16000', '-ac', '1', '-y', audio_path
                                     ], check=True, capture_output=True)
                                     
